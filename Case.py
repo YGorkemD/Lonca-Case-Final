@@ -53,3 +53,45 @@ class Product:
             'createdAt': self.created_at,
             'updatedAt': self.updated_at,
         }
+    
+
+class ProductManager:
+    """Ürün yönetimi için sınıf."""
+    
+    def __init__(self, connection_string, db_name, collection_name):
+        try:
+            self.client = MongoClient(connection_string)
+            self.collection = self.client[db_name][collection_name]
+        except Exception as e:
+            print(f"MongoDB bağlantısı sırasında bir hata oluştu: {e}")
+            raise
+
+    def parse_xml(self, xml_file):
+        """XML dosyasını okuyup ürün nesnelerine dönüştürür."""
+        try:
+            tree = ET.parse(xml_file)
+            root = tree.getroot()
+        except FileNotFoundError:
+            print(f"XML dosyası bulunamadı: {xml_file}")
+            raise
+        except ET.ParseError:
+            print(f"XML dosyası hatalı bir formata sahip: {xml_file}")
+            raise
+        except Exception as e:
+            print(f"XML dosyasını işlerken bir hata oluştu: {e}")
+            raise
+
+        products = []
+        try:
+            for product in root.findall('Product'):
+                product_id = product.get('ProductId')
+                name = product.get('Name')
+                images = [img.get('Path') for img in product.find('Images')]
+                details = {detail.get('Name'): detail.get('Value') for detail in product.find('ProductDetails')}
+                description = product.find('Description').text.strip() if product.find('Description') else ""
+                products.append(Product(product_id, name, details, images, description))
+        except Exception as e:
+            print(f"XML dosyasındaki ürünler işlenirken bir hata oluştu: {e}")
+            raise
+
+        return products
