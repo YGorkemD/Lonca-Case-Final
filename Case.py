@@ -95,3 +95,32 @@ class ProductManager:
             raise
 
         return products
+    
+    def insert_or_update_products(self, products):
+        """Ürünleri MongoDB'ye ekler veya günceller."""
+        try:
+            for product in products:
+                self.collection.update_one(
+                    {'_id': product.product_id},  # Ürünü benzersiz kılan alan
+                    {'$set': product.to_dict()},  # Veriyi güncelle veya ekle
+                    upsert=True                   # Veri yoksa ekle
+                )
+        except Exception as e:
+            print(f"Ürünleri MongoDB'ye eklerken bir hata oluştu: {e}")
+            raise
+
+
+if __name__ == "__main__":
+    connection_string = "mongodb+srv://yavuzgorkemd:yavuz33520@cluster0.j2hru.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    db_name = "ProductDB"
+    collection_name = "Products"
+    
+    try:
+        manager = ProductManager(connection_string, db_name, collection_name)
+        xml_file = 'xml_file.xml'
+
+        products = manager.parse_xml(xml_file)
+        manager.insert_or_update_products(products)
+        print(f"{len(products)} ürün başarıyla işlendi ve MongoDB'ye aktarıldı.")
+    except Exception as e:
+        print(f"Bir hata oluştu: {e}")
